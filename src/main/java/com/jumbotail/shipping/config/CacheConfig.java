@@ -16,7 +16,7 @@ public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager("nearestWarehouse", "shippingCharge", "shippingEstimate", "productWeight", "warehouseInventoryCheck");
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager("nearestWarehouse", "shippingCharge", "shippingEstimate", "productWeight", "warehouseInventoryCheck", "distanceCache");
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .initialCapacity(100)
                 .maximumSize(500)

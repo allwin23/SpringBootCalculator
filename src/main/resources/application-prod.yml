@@ -24,8 +24,13 @@ spring:
     cache-names:
       - shippingEstimate
       - warehouseInventoryCheck
+      - distanceCache
     caffeine:
       spec: maximumSize=500,expireAfterWrite=10m
+
+google:
+  maps:
+    api-key: ${GOOGLE_MAPS_API_KEY:}
 
 server:
   port: ${PORT:9090}
