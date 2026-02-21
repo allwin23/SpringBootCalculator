@@ -28,7 +28,17 @@ spring:
       spec: maximumSize=500,expireAfterWrite=10m
 
 server:
-  port: 9090
+  port: ${PORT:9090}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
 
 logging:
   level:
