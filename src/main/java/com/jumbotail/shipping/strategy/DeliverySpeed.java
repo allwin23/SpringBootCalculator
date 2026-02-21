@@ -4,17 +4,21 @@ package com.jumbotail.shipping.strategy;
  * Enum representing different delivery speeds
  */
 public enum DeliverySpeed {
-    STANDARD("standard", 10.0, 0.0), // Rs 10 standard charge, no extra per kg
-    EXPRESS("express", 10.0, 1.2);   // Rs 10 standard charge + Rs 1.2 per kg extra
+    STANDARD("standard", 10.0, 0.0, 24.0, 1.2), // 24h handling, 1.2x time factor
+    EXPRESS("express", 10.0, 1.2, 4.0, 0.8);    // 4h handling, 0.8x time factor
     
     private final String code;
     private final double standardCharge; // Standard courier charge in Rs
     private final double extraPerKg;    // Extra charge per kg in Rs
+    private final double handlingHours;  // Fixed handling time in hours
+    private final double timeFactor;    // Multiplier for transport time
     
-    DeliverySpeed(String code, double standardCharge, double extraPerKg) {
+    DeliverySpeed(String code, double standardCharge, double extraPerKg, double handlingHours, double timeFactor) {
         this.code = code;
         this.standardCharge = standardCharge;
         this.extraPerKg = extraPerKg;
+        this.handlingHours = handlingHours;
+        this.timeFactor = timeFactor;
     }
     
     /**
@@ -59,5 +63,13 @@ public enum DeliverySpeed {
     
     public double getExtraPerKg() {
         return extraPerKg;
+    }
+
+    public double getHandlingHours() {
+        return handlingHours;
+    }
+
+    public double getTimeFactor() {
+        return timeFactor;
     }
 }

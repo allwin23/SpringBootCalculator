@@ -4,20 +4,22 @@ package com.jumbotail.shipping.strategy;
  * Enum representing different transport modes
  */
 public enum TransportMode {
-    MINI_VAN("Mini Van", 0, 100, 3.0),
-    TRUCK("Truck", 100, 500, 2.0),
-    AEROPLANE("Aeroplane", 500, Double.MAX_VALUE, 1.0);
+    MINI_VAN("Mini Van", 0, 100, 3.0, 40.0),      // 40 km/h
+    TRUCK("Truck", 100, 500, 2.0, 60.0),         // 60 km/h
+    AEROPLANE("Aeroplane", 500, Double.MAX_VALUE, 1.0, 500.0); // 500 km/h
     
     private final String name;
     private final double minDistance;
     private final double maxDistance;
     private final double ratePerKmPerKg; // Rate in Rs per km per kg
+    private final double averageSpeed;    // Average speed in km/h
     
-    TransportMode(String name, double minDistance, double maxDistance, double ratePerKmPerKg) {
+    TransportMode(String name, double minDistance, double maxDistance, double ratePerKmPerKg, double averageSpeed) {
         this.name = name;
         this.minDistance = minDistance;
         this.maxDistance = maxDistance;
         this.ratePerKmPerKg = ratePerKmPerKg;
+        this.averageSpeed = averageSpeed;
     }
     
     /**
@@ -61,5 +63,9 @@ public enum TransportMode {
     
     public double getRatePerKmPerKg() {
         return ratePerKmPerKg;
+    }
+
+    public double getAverageSpeed() {
+        return averageSpeed;
     }
 }
