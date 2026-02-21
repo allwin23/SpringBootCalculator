@@ -37,6 +37,7 @@ public class ShippingChargeService {
     private final CustomerRepository customerRepository;
     private final SellerRepository sellerRepository;
     private final ProductRepository productRepository;
+    private final ShippingMetricsService shippingMetricsService;
     
     /**
      * Calculate shipping charge from warehouse to customer
@@ -55,51 +56,61 @@ public class ShippingChargeService {
     public Double calculateShippingCharge(String warehouseId, String customerId, String deliverySpeed, String productId) {
         log.info("Calculating shipping charge for warehouseId: {}, customerId: {}, deliverySpeed: {}, productId: {}", 
                  warehouseId, customerId, deliverySpeed, productId);
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        String finalTransportMode = null;
         
-        // Validate delivery speed
-        DeliverySpeed speed;
         try {
-            speed = DeliverySpeed.fromCode(deliverySpeed);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidRequestException("Invalid delivery speed: " + deliverySpeed + ". Must be 'standard' or 'express'");
-        }
-        
-        // Get warehouse
-        Warehouse warehouse = warehouseService.getWarehouseByWarehouseId(warehouseId);
-        
-        if (warehouse.getLocation() == null || warehouse.getLocation().getLat() == null ||
-            warehouse.getLocation().getLng() == null) {
-            throw new ResourceNotFoundException("Warehouse location not available for warehouseId: " + warehouseId);
-        }
-        
-        // Get customer
-        Customer customer = customerRepository.findByCustomerIdAndActiveTrue(customerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with ID: " + customerId));
-        
-        if (customer.getLocation() == null || customer.getLocation().getLat() == null ||
-            customer.getLocation().getLng() == null) {
-            throw new ResourceNotFoundException("Customer location not available for customerId: " + customerId);
-        }
-        
-        // Calculate distance
-        double distance = DistanceCalculator.calculateDistance(warehouse.getLocation(), customer.getLocation());
-        
-        // Get product weight if productId is provided
-        double weight = 1.0; // Default weight in kg
-        if (productId != null && !productId.trim().isEmpty()) {
-            Product product = productRepository.findByProductIdAndActiveTrue(productId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
-            
-            if (product.getAttributes() != null && product.getAttributes().getWeight() != null) {
-                weight = product.getAttributes().getWeight();
-            } else {
-                log.warn("Product {} has no weight information, using default weight", productId);
+            // Validate delivery speed
+            DeliverySpeed speed;
+            try {
+                speed = DeliverySpeed.fromCode(deliverySpeed);
+            } catch (IllegalArgumentException e) {
+                throw new InvalidRequestException("Invalid delivery speed: " + deliverySpeed + ". Must be 'standard' or 'express'");
             }
-        } else {
-            log.warn("ProductId not provided, using default weight {} kg for shipping charge calculation", weight);
+            
+            // Get warehouse
+            Warehouse warehouse = warehouseService.getWarehouseByWarehouseId(warehouseId);
+            
+            if (warehouse.getLocation() == null || warehouse.getLocation().getLat() == null ||
+                warehouse.getLocation().getLng() == null) {
+                throw new ResourceNotFoundException("Warehouse location not available for warehouseId: " + warehouseId);
+            }
+            
+            // Get customer
+            Customer customer = customerRepository.findByCustomerIdAndActiveTrue(customerId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Customer not found with ID: " + customerId));
+            
+            if (customer.getLocation() == null || customer.getLocation().getLat() == null ||
+                customer.getLocation().getLng() == null) {
+                throw new ResourceNotFoundException("Customer location not available for customerId: " + customerId);
+            }
+            
+            // Calculate distance
+            double distance = DistanceCalculator.calculateDistance(warehouse.getLocation(), customer.getLocation());
+            
+            // Get product weight if productId is provided
+            double weight = 1.0; // Default weight in kg
+            if (productId != null && !productId.trim().isEmpty()) {
+                Product product = productRepository.findByProductIdAndActiveTrue(productId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
+                
+                if (product.getAttributes() != null && product.getAttributes().getWeight() != null) {
+                    weight = product.getAttributes().getWeight();
+                } else {
+                    log.warn("Product {} has no weight information, using default weight", productId);
+                }
+            } else {
+                log.warn("ProductId not provided, using default weight {} kg for shipping charge calculation", weight);
+            }
+            
+            finalTransportMode = TransportMode.getTransportMode(distance).getName();
+            Double charge = calculateShippingChargeInternal(distance, weight, speed);
+            success = true;
+            return charge;
+        } finally {
+            shippingMetricsService.recordMetrics(System.currentTimeMillis() - startTime, finalTransportMode, success);
         }
-        
-        return calculateShippingChargeInternal(distance, weight, speed);
     }
     
     /**
@@ -113,68 +124,77 @@ public class ShippingChargeService {
     public ShippingChargeResponse calculateShippingChargeForSellerAndCustomer(ShippingChargeRequest request) {
         log.info("Calculating shipping charge for sellerId: {}, customerId: {}, deliverySpeed: {}", 
                  request.getSellerId(), request.getCustomerId(), request.getDeliverySpeed());
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        String finalTransportMode = null;
         
-        // Validate delivery speed
-        DeliverySpeed speed;
         try {
-            speed = DeliverySpeed.fromCode(request.getDeliverySpeed());
-        } catch (IllegalArgumentException e) {
-            throw new InvalidRequestException("Invalid delivery speed: " + request.getDeliverySpeed() + 
-                                             ". Must be 'standard' or 'express'");
+            // Validate delivery speed
+            DeliverySpeed speed;
+            try {
+                speed = DeliverySpeed.fromCode(request.getDeliverySpeed());
+            } catch (IllegalArgumentException e) {
+                throw new InvalidRequestException("Invalid delivery speed: " + request.getDeliverySpeed() + 
+                                                 ". Must be 'standard' or 'express'");
+            }
+            
+            // Get seller
+            Seller seller = sellerRepository.findBySellerIdAndActiveTrue(request.getSellerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Seller not found with ID: " + request.getSellerId()));
+            
+            if (seller.getLocation() == null || seller.getLocation().getLat() == null ||
+                seller.getLocation().getLng() == null) {
+                throw new ResourceNotFoundException("Seller location not available for sellerId: " + request.getSellerId());
+            }
+            
+            // Get customer
+            Customer customer = customerRepository.findByCustomerIdAndActiveTrue(request.getCustomerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Customer not found with ID: " + request.getCustomerId()));
+            
+            if (customer.getLocation() == null || customer.getLocation().getLat() == null ||
+                customer.getLocation().getLng() == null) {
+                throw new ResourceNotFoundException("Customer location not available for customerId: " + request.getCustomerId());
+            }
+            
+            // Find nearest warehouse to seller
+            // We need productId for this, but it's not in the request. Let's get seller's first product
+            List<Product> sellerProducts = productRepository.findBySellerAndActiveTrue(seller);
+            
+            if (sellerProducts.isEmpty()) {
+                throw new ResourceNotFoundException("No products found for sellerId: " + request.getSellerId());
+            }
+            
+            // Use first product to find nearest warehouse
+            Product product = sellerProducts.get(0);
+            NearestWarehouseResponse nearestWarehouse = warehouseService.findNearestWarehouse(
+                    request.getSellerId(), product.getProductId());
+            
+            // Get warehouse entity
+            Warehouse warehouse = warehouseService.getWarehouseByWarehouseId(nearestWarehouse.getWarehouseId());
+            
+            // Calculate distance from warehouse to customer
+            double distance = DistanceCalculator.calculateDistance(warehouse.getLocation(), customer.getLocation());
+            finalTransportMode = TransportMode.getTransportMode(distance).getName();
+            
+            // Get product weight
+            double weight = product.getAttributes() != null && product.getAttributes().getWeight() != null
+                    ? product.getAttributes().getWeight()
+                    : 1.0; // Default weight if not available
+            
+            // Calculate shipping charge
+            Double shippingCharge = calculateShippingChargeInternal(distance, weight, speed);
+            
+            log.info("Shipping charge calculated: {} Rs for distance: {} km, weight: {} kg", 
+                     shippingCharge, distance, weight);
+            
+            success = true;
+            return ShippingChargeResponse.builder()
+                    .shippingCharge(shippingCharge)
+                    .nearestWarehouse(nearestWarehouse)
+                    .build();
+        } finally {
+            shippingMetricsService.recordMetrics(System.currentTimeMillis() - startTime, finalTransportMode, success);
         }
-        
-        // Get seller
-        Seller seller = sellerRepository.findBySellerIdAndActiveTrue(request.getSellerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Seller not found with ID: " + request.getSellerId()));
-        
-        if (seller.getLocation() == null || seller.getLocation().getLat() == null ||
-            seller.getLocation().getLng() == null) {
-            throw new ResourceNotFoundException("Seller location not available for sellerId: " + request.getSellerId());
-        }
-        
-        // Get customer
-        Customer customer = customerRepository.findByCustomerIdAndActiveTrue(request.getCustomerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with ID: " + request.getCustomerId()));
-        
-        if (customer.getLocation() == null || customer.getLocation().getLat() == null ||
-            customer.getLocation().getLng() == null) {
-            throw new ResourceNotFoundException("Customer location not available for customerId: " + request.getCustomerId());
-        }
-        
-        // Find nearest warehouse to seller
-        // We need productId for this, but it's not in the request. Let's get seller's first product
-        List<Product> sellerProducts = productRepository.findBySellerAndActiveTrue(seller);
-        
-        if (sellerProducts.isEmpty()) {
-            throw new ResourceNotFoundException("No products found for sellerId: " + request.getSellerId());
-        }
-        
-        // Use first product to find nearest warehouse
-        Product product = sellerProducts.get(0);
-        NearestWarehouseResponse nearestWarehouse = warehouseService.findNearestWarehouse(
-                request.getSellerId(), product.getProductId());
-        
-        // Get warehouse entity
-        Warehouse warehouse = warehouseService.getWarehouseByWarehouseId(nearestWarehouse.getWarehouseId());
-        
-        // Calculate distance from warehouse to customer
-        double distance = DistanceCalculator.calculateDistance(warehouse.getLocation(), customer.getLocation());
-        
-        // Get product weight
-        double weight = product.getAttributes() != null && product.getAttributes().getWeight() != null
-                ? product.getAttributes().getWeight()
-                : 1.0; // Default weight if not available
-        
-        // Calculate shipping charge
-        Double shippingCharge = calculateShippingChargeInternal(distance, weight, speed);
-        
-        log.info("Shipping charge calculated: {} Rs for distance: {} km, weight: {} kg", 
-                 shippingCharge, distance, weight);
-        
-        return ShippingChargeResponse.builder()
-                .shippingCharge(shippingCharge)
-                .nearestWarehouse(nearestWarehouse)
-                .build();
     }
     
     /**

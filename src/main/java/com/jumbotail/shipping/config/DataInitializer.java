@@ -5,10 +5,13 @@ import com.jumbotail.shipping.repository.CustomerRepository;
 import com.jumbotail.shipping.repository.ProductRepository;
 import com.jumbotail.shipping.repository.SellerRepository;
 import com.jumbotail.shipping.repository.WarehouseRepository;
+import com.jumbotail.shipping.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import java.util.List;
+import java.time.LocalDateTime;
 
 /**
  * Data initializer to populate sample data for testing
@@ -22,6 +25,7 @@ public class DataInitializer implements CommandLineRunner {
     private final SellerRepository sellerRepository;
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
+    private final OrderRepository orderRepository;
     
     @Override
     public void run(String... args) {
@@ -35,6 +39,9 @@ public class DataInitializer implements CommandLineRunner {
         
         // Initialize Sellers and Products
         initializeSellersAndProducts();
+        
+        // Initialize Orders
+        initializeOrders();
         
         log.info("Sample data initialization completed");
     }
@@ -146,6 +153,63 @@ public class DataInitializer implements CommandLineRunner {
             
             log.info("Initialized {} sellers and {} products", 
                      sellerRepository.count(), productRepository.count());
+        }
+    }
+    
+    private void initializeOrders() {
+        if (orderRepository.count() == 0) {
+            Customer c1 = customerRepository.findByCustomerIdAndActiveTrue("Cust-123").orElse(null);
+            Seller s1 = sellerRepository.findBySellerIdAndActiveTrue("123").orElse(null); // Nestle
+            Product p1 = productRepository.findByProductIdAndActiveTrue("456").orElse(null); // Maggie
+            
+            if (c1 != null && s1 != null && p1 != null) {
+                Order order1 = Order.builder()
+                    .orderId("ORD-001")
+                    .customer(c1)
+                    .seller(s1)
+                    .status(OrderStatus.CREATED)
+                    .orderDate(LocalDateTime.now())
+                    .totalAmount(100.0)
+                    .totalWeight(5.0)
+                    .build();
+                    
+                OrderItem item1 = OrderItem.builder()
+                    .order(order1)
+                    .product(p1)
+                    .quantity(10)
+                    .price(10.0)
+                    .weight(0.5)
+                    .build();
+                    
+                order1.setItems(List.of(item1));
+                orderRepository.save(order1);
+                
+                Product p2 = productRepository.findByProductIdAndActiveTrue("457").orElse(null); // Rice
+                if (p2 != null) {
+                    Order order2 = Order.builder()
+                        .orderId("ORD-002")
+                        .customer(c1)
+                        .seller(s1)
+                        .status(OrderStatus.CREATED)
+                        .orderDate(LocalDateTime.now())
+                        .totalAmount(500.0)
+                        .totalWeight(10.0)
+                        .build();
+                        
+                    OrderItem item2 = OrderItem.builder()
+                        .order(order2)
+                        .product(p2)
+                        .quantity(1)
+                        .price(500.0)
+                        .weight(10.0)
+                        .build();
+                        
+                    order2.setItems(List.of(item2));
+                    orderRepository.save(order2);
+                }
+                
+                log.info("Initialized {} orders", orderRepository.count());
+            }
         }
     }
 }
