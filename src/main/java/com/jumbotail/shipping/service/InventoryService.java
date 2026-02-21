@@ -21,6 +21,7 @@ public class InventoryService {
      * @param order the order containing items to check
      * @return true if all items are in stock with sufficient quantity, false otherwise
      */
+    @Cacheable(value = "warehouseInventoryCheck", key = "#warehouseId + '_' + #order.id")
     public boolean hasSufficientStockForOrder(Long warehouseId, Order order) {
         for (OrderItem item : order.getItems()) {
             boolean hasStock = hasSufficientStock(warehouseId, item.getProduct().getId(), item.getQuantity());

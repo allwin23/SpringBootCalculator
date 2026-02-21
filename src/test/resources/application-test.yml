@@ -16,7 +16,12 @@ spring:
     show-sql: false
   
   cache:
-    type: none
+    type: caffeine
+    cache-names:
+      - shippingEstimate
+      - warehouseInventoryCheck
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=10m
 
 logging:
   level:

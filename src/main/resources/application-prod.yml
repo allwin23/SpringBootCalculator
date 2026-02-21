@@ -19,6 +19,14 @@ spring:
       ddl-auto: update # Use update or validate in production
     show-sql: false # Disable raw SQL logging for performance
 
+  cache:
+    type: caffeine
+    cache-names:
+      - shippingEstimate
+      - warehouseInventoryCheck
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=10m
+
 server:
   port: ${PORT:9090}
 
