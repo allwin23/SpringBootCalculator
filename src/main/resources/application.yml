@@ -24,6 +24,9 @@ spring:
   
   cache:
     type: caffeine
+    cache-names:
+      - shippingEstimate
+      - warehouseInventoryCheck
     caffeine:
       spec: maximumSize=500,expireAfterWrite=10m
 

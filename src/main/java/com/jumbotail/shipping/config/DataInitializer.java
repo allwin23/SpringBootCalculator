@@ -6,6 +6,7 @@ import com.jumbotail.shipping.repository.ProductRepository;
 import com.jumbotail.shipping.repository.SellerRepository;
 import com.jumbotail.shipping.repository.WarehouseRepository;
 import com.jumbotail.shipping.repository.OrderRepository;
+import com.jumbotail.shipping.repository.InventoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -26,6 +27,7 @@ public class DataInitializer implements CommandLineRunner {
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
     private final OrderRepository orderRepository;
+    private final InventoryRepository inventoryRepository;
     
     @Override
     public void run(String... args) {
@@ -42,6 +44,9 @@ public class DataInitializer implements CommandLineRunner {
         
         // Initialize Orders
         initializeOrders();
+        
+        // Initialize Inventory
+        initializeInventory();
         
         log.info("Sample data initialization completed");
     }
@@ -209,6 +214,59 @@ public class DataInitializer implements CommandLineRunner {
                 }
                 
                 log.info("Initialized {} orders", orderRepository.count());
+            }
+        }
+    }
+
+    private void initializeInventory() {
+        if (inventoryRepository.count() == 0) {
+            Warehouse w1 = warehouseRepository.findByWarehouseIdAndActiveTrue("789").orElse(null);
+            Warehouse w2 = warehouseRepository.findByWarehouseIdAndActiveTrue("790").orElse(null);
+            
+            Product p1 = productRepository.findByProductIdAndActiveTrue("456").orElse(null); // Maggie
+            Product p2 = productRepository.findByProductIdAndActiveTrue("457").orElse(null); // Rice
+            Product p3 = productRepository.findByProductIdAndActiveTrue("458").orElse(null); // Sugar
+            
+            if (w1 != null && w2 != null && p1 != null && p2 != null && p3 != null) {
+                // BLR Warehouse Inventory (has everything)
+                inventoryRepository.save(WarehouseInventory.builder()
+                        .warehouseId(w1.getId())
+                        .productId(p1.getId())
+                        .quantity(500)
+                        .build());
+                        
+                inventoryRepository.save(WarehouseInventory.builder()
+                        .warehouseId(w1.getId())
+                        .productId(p2.getId())
+                        .quantity(200)
+                        .build());
+                        
+                inventoryRepository.save(WarehouseInventory.builder()
+                        .warehouseId(w1.getId())
+                        .productId(p3.getId())
+                        .quantity(20)
+                        .build());
+                        
+                // MUMB Warehouse Inventory (only has Rice and Sugar, explicitly out of Maggie)
+                inventoryRepository.save(WarehouseInventory.builder()
+                        .warehouseId(w2.getId())
+                        .productId(p1.getId())
+                        .quantity(0) // Out of stock on purpose
+                        .build());
+                        
+                inventoryRepository.save(WarehouseInventory.builder()
+                        .warehouseId(w2.getId())
+                        .productId(p2.getId())
+                        .quantity(50)
+                        .build());
+                        
+                inventoryRepository.save(WarehouseInventory.builder()
+                        .warehouseId(w2.getId())
+                        .productId(p3.getId())
+                        .quantity(50)
+                        .build());
+                        
+                log.info("Initialized {} warehouse inventory records", inventoryRepository.count());
             }
         }
     }
