@@ -4,12 +4,17 @@ A Spring Boot application for calculating shipping charges in a B2B e-commerce m
 
 ## Features
 
-- **Nearest Warehouse Finder**: Find the nearest warehouse for a seller based on product location
-- **Shipping Charge Calculator**: Calculate shipping charges based on distance, weight, transport mode, and delivery speed
-- **Combined API**: Single endpoint to find nearest warehouse and calculate shipping charge
-- **Caching**: Response caching for improved performance
-- **Exception Handling**: Comprehensive error handling with meaningful error messages
-- **Unit Tests**: Complete test coverage for services and utilities
+- **Google Maps Distance Engine**: Real-time matrix distance calculations with seamless Haversine fallback.
+- **Logistics Simulator & Shipping Architect**: Calculate multi-tier shipping charges based on distance, weight, transport mode, and delivery speed.
+- **Nearest Warehouse Finder**: Core spatial routing system routing to closest viable inventory.
+- **Flexible Weight Conversions**: Intelligent dynamic unit mapping to localized units (KG, LBS, GRAMS).
+- **Enterprise Rate Limiting**: Bulletproof endpoint protection powered by Bucket4j throttling algorithms.
+- **Telemetry Monitoring**: Full-scale metrics aggregation tracking active shipments, averages, and volume.
+- **Strict Exception Handling**: Standardized, secure `@ControllerAdvice` API error responses filtering raw stack traces into safe, front-end consumable HTTP codes (e.g. `InvalidRequestException` for 400).
+- **Fast Performance Caching**: In-memory response caching via Caffeine preventing redundant API calls.
+- **Production Ready**: Fully Dockerized, multi-cloud compatible (Render/Railway), and database-agnostic (H2 vs PostgreSQL).
+- **Interactive Documentation**: Swagger UI automatically deployed to intercept the base URL (No need to hunt for docs!).
+- **Comprehensive Testing**: Validated via exhaustive Unit Tests and System Integration validations.
 
 ## Technology Stack
 
@@ -43,6 +48,10 @@ jumbotail-shipping/
 └── pom.xml                       # Maven dependencies
 ```
 
+## 📚 Architectural Design & API Docs
+
+For a deep dive into the System Design, Strategy Patterns, Database hot-swapping, and the complete internal structure of every API endpoint, please explore the [ARCHITECTURE.md](ARCHITECTURE.md) record.
+
 ## Business Logic
 
 ### Transport Modes
@@ -62,78 +71,130 @@ The application determines transport mode based on distance:
 
 Uses the Haversine formula to calculate great-circle distance between two geographic coordinates.
 
-## API Endpoints
+## 🌐 API Definitions & Usage
 
-### 1. Get Nearest Warehouse
+The Jumbotail Shipping Engine exposes powerful REST APIs for end-to-end commerce handling.
 
-**Endpoint**: `GET /api/v1/warehouse/nearest`
+### 1. Order Management & Checkout (`OrderController`)
 
-**Query Parameters**:
-- `sellerId` (required): Seller ID
-- `productId` (required): Product ID
-
-**Example Request**:
-```bash
-GET /api/v1/warehouse/nearest?sellerId=123&productId=456
-```
-
-**Example Response**:
-```json
-{
-  "warehouseId": 789,
-  "warehouseLocation": {
-    "lat": 12.99999,
-    "lng": 37.923273
-  }
-}
-```
-
-### 2. Get Shipping Charge
-
-**Endpoint**: `GET /api/v1/shipping-charge`
-
-**Query Parameters**:
-- `warehouseId` (required): Warehouse ID
-- `customerId` (required): Customer ID
-- `deliverySpeed` (required): "standard" or "express"
-- `productId` (optional): Product ID for accurate weight calculation
-
-**Example Request**:
-```bash
-GET /api/v1/shipping-charge?warehouseId=789&customerId=456&deliverySpeed=standard&productId=456
-```
-
-**Example Response**:
-```json
-{
-  "shippingCharge": 150.00
-}
-```
-
-### 3. Calculate Shipping Charge for Seller and Customer
-
-**Endpoint**: `POST /api/v1/shipping-charge/calculate`
-
-**Request Body**:
+**A. Create New Order (Multi-Item Support)**
+- **Endpoint**: `POST /api/v1/orders`
+- **Use Case**: B2B Kirana store ordering products from a specific supplier matrix.
+- **Request Body (Database Compatible)**:
 ```json
 {
   "sellerId": "123",
-  "customerId": "456",
-  "deliverySpeed": "express"
+  "customerId": "Cust-123",
+  "items": [
+    {
+      "productId": "456",
+      "quantity": 50
+    },
+    {
+      "productId": "459",
+      "quantity": 10
+    }
+  ]
+}
+```
+- **Response**: Returns full `OrderResponse` containing unique `id`, mapped `seller`, `customer`, `status`, and total `items`.
+
+**B. Get Order Details**
+- **Endpoint**: `GET /api/v1/orders/{orderId}`
+- **Use Case**: Viewing an active order receipt.
+
+**C. Calculate Cart Shipping Architecture**
+- **Endpoint**: `GET /api/v1/orders/{orderId}/shipping`
+- **Query Params**: `deliverySpeed` (STANDARD or EXPRESS)
+- **Use Case**: Taking a full customer cart, locating nearest dispatch warehouse with necessary inventory, summing the total kg cart weight, analyzing geographic distance against the destination, choosing the cheapest transport vector, and finalizing the bill.
+- **Response**:
+```json
+{
+  "orderId": 11,
+  "deliverySpeed": "STANDARD",
+  "nearestWarehouse": {
+    "warehouseId": 789,
+    "distanceKm": 84.76
+  },
+  "cartWeightKg": 2.50,
+  "transportMode": "MINI_VAN",
+  "shippingCost": 635.70,
+  "estimatedDeliveryDays": 3
 }
 ```
 
-**Example Response**:
+### 2. Logistics Distance Engine (`DistanceController`)
+
+**Get Route Telemetry**
+- **Endpoint**: `GET /api/v1/logistics/distance`
+- **Use Case**: Used by backend routers to identify live road distance dynamically failing over if external nodes crash.
+- **Query Parameters**:
+  - `sourceLat`, `sourceLng` (required): Starting coordinate
+  - `destLat`, `destLng` (required): End coordinate
+  - `mode` (optional; `GOOGLE` or `HAVERSINE`)
+- **Example Request** (BLR Warehouse to 'Cust-123' store):
+```bash
+GET /api/v1/logistics/distance?sourceLat=12.99999&sourceLng=37.923273&destLat=11.232&destLng=23.445495&mode=GOOGLE
+```
+- **Response**:
 ```json
 {
-  "shippingCharge": 180.00,
-  "nearestWarehouse": {
-    "warehouseId": 789,
-    "warehouseLocation": {
-      "lat": 12.99999,
-      "lng": 37.923273
-    }
-  }
+  "distanceKm": 1642.3,
+  "calculationMode": "GOOGLE",
+  "durationMinutes": 1845
+}
+```
+
+### 3. Supply Chain Simulator (`LogisticsController`)
+
+**Test Theoretical Routes**
+- **Endpoint**: `POST /api/v1/logistics/simulate`
+- **Use Case**: Business logic simulation for profitability validation. Feeds arbitrary metrics and calculates hypothetical margins.
+- **Request Body**:
+```json
+{
+  "distanceKm": 500.5,
+  "weightKg": 100.0,
+  "transportMode": "AEROPLANE"
+}
+```
+- **Response**: Outputs theoretical `totalCost`, `profitMargin`, etc.
+
+### 4. Warehouse Inventory Lookups (`WarehouseController`)
+
+**Get Nearest Dispatch Center**
+- **Endpoint**: `GET /api/v1/warehouse/nearest`
+- **Use Case**: Geographically search the database for the nearest physical building that stocks the necessary item.
+
+### 5. Product Catalog Conversions (`ProductController`)
+
+**Convert Product Weights**
+- **Endpoint**: `GET /api/v1/products/{productId}/weight`
+- **Query Params**: `targetUnit` (KG, LBS, GRAMS)
+- **Use Case**: Frontend localization. Converts product mass metrics efficiently.
+- **Response**:
+```json
+{
+  "productId": 789,
+  "productName": "Maggie 500g",
+  "originalWeightKg": 0.5,
+  "convertedWeight": 1.1023,
+  "targetUnit": "LBS"
+}
+```
+
+### 6. Operational Telemetry (`MetricsController`)
+
+**Fetch Analytics Data**
+- **Endpoint**: `GET /api/v1/metrics/shipping`
+- **Use Case**: Get global operational statistics.
+- **Response**:
+```json
+{
+  "totalOrdersProcessed": 45,
+  "averageShippingCost": 234.50,
+  "totalRevenue": 10552.50,
+  "mostCommonTransportMode": "TRUCK"
 }
 ```
 
@@ -206,25 +267,27 @@ Cache configuration:
 - Maximum size: 500 entries
 - Expiration: 10 minutes after write
 
-## Exception Handling
+## Exception Handling Architecture
 
-The application includes comprehensive exception handling:
+The application implements a robust, fault-tolerant `GlobalExceptionHandler` mapping core errors into safe JSON structures.
 
-- `ResourceNotFoundException`: When requested resource is not found
-- `InvalidRequestException`: When request parameters are invalid
-- `IllegalArgumentException`: For invalid arguments
-- Global exception handler returns standardized error responses
+- `ResourceNotFoundException`: Maps cleanly to `404 Not Found` when requesting invalid Order IDs or inactive Warehouses.
+- `InvalidRequestException`: Traps bad payloads into `400 Bad Request` avoiding 500 crashes.
+- `MissingServletRequestParameterException`: Gracefully intercepts missing required parameters like `customerId`.
+- `Validation Exceptions`: All DTO `@Valid` failures safely output their customized constraint string directly to the client.
 
-## Future Enhancements
+## Project Expansion Milestones (Successfully Completed)
 
-- [ ] Support for multiple products in a single order
-- [ ] Integration with external mapping services for accurate distance calculation
-- [ ] Support for different weight units
-- [ ] Rate limiting and API versioning
-- [ ] Swagger/OpenAPI documentation
-- [ ] Docker containerization
-- [ ] Integration tests
-- [ ] Performance monitoring and metrics
+Every initial target of this project's roadmap has successfully been engineered:
+
+- ✅ **External Mapping Integration**: Google Maps Distance Matrix implementation.
+- ✅ **Swagger/OpenAPI UI**: Fully auto-generated interactive documentation at `/`.
+- ✅ **Cloud Platform Containerization**: 100% platform-agnostic `Dockerfile`.
+- ✅ **Multiple Products in Single Order**: Full Order itemization loop matrix applied.
+- ✅ **Variable Weight Units**: Dynamic localization built-in for multi-national weight mapping.
+- ✅ **Rate Limiting & Threat Protection**: Endpoints shielded by Bucket4j algorithms.
+- ✅ **Testing Matrix Full Coverage**: Isolated component unit tests and system validations.
+- ✅ **Performance Telemetry**: Full statistical `/metrics` controllers for Grafana consumption.
 
 ## Author
 
