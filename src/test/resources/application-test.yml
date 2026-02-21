@@ -16,7 +16,7 @@ spring:
     show-sql: false
   
   cache:
-    type: simple
+    type: none
 
 logging:
   level:

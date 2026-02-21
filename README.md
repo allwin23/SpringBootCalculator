@@ -157,13 +157,13 @@ mvn clean install
 mvn spring-boot:run
 ```
 
-The application will start on `http://localhost:8080`
+The application will start on `http://localhost:9090`
 
 ### Access H2 Console
 
 Once the application is running, you can access the H2 database console at:
 ```
-http://localhost:8080/h2-console
+http://localhost:9090/h2-console
 ```
 
 **JDBC URL**: `jdbc:h2:mem:shippingdb`

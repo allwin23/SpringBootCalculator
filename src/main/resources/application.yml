@@ -28,7 +28,7 @@ spring:
       spec: maximumSize=500,expireAfterWrite=10m
 
 server:
-  port: 8080
+  port: 9090
 
 logging:
   level:
