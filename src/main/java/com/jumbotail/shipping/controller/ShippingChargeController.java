@@ -36,7 +36,7 @@ public class ShippingChargeController {
      */
     @GetMapping
     public ResponseEntity<Map<String, Double>> getShippingCharge(
-            @RequestParam Long warehouseId,
+            @RequestParam String warehouseId,
             @RequestParam String customerId,
             @RequestParam String deliverySpeed,
             @RequestParam(required = false) String productId) {

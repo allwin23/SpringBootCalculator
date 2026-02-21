@@ -52,7 +52,7 @@ public class ShippingChargeService {
      */
     @Cacheable(value = "shippingCharge", key = "#warehouseId + '_' + #customerId + '_' + #deliverySpeed + '_' + (#productId != null ? #productId : 'default')")
     @Transactional(readOnly = true)
-    public Double calculateShippingCharge(Long warehouseId, String customerId, String deliverySpeed, String productId) {
+    public Double calculateShippingCharge(String warehouseId, String customerId, String deliverySpeed, String productId) {
         log.info("Calculating shipping charge for warehouseId: {}, customerId: {}, deliverySpeed: {}, productId: {}", 
                  warehouseId, customerId, deliverySpeed, productId);
         
@@ -65,7 +65,7 @@ public class ShippingChargeService {
         }
         
         // Get warehouse
-        Warehouse warehouse = warehouseService.getWarehouseById(warehouseId);
+        Warehouse warehouse = warehouseService.getWarehouseByWarehouseId(warehouseId);
         
         if (warehouse.getLocation() == null || warehouse.getLocation().getLat() == null ||
             warehouse.getLocation().getLng() == null) {
@@ -108,6 +108,7 @@ public class ShippingChargeService {
      * @param request Shipping charge request containing sellerId, customerId, and deliverySpeed
      * @return Shipping charge response with charge and nearest warehouse
      */
+    @Cacheable(value = "shippingCharge", key = "#request.sellerId + '_' + #request.customerId + '_' + #request.deliverySpeed")
     @Transactional(readOnly = true)
     public ShippingChargeResponse calculateShippingChargeForSellerAndCustomer(ShippingChargeRequest request) {
         log.info("Calculating shipping charge for sellerId: {}, customerId: {}, deliverySpeed: {}", 
@@ -154,7 +155,7 @@ public class ShippingChargeService {
                 request.getSellerId(), product.getProductId());
         
         // Get warehouse entity
-        Warehouse warehouse = warehouseService.getWarehouseById(nearestWarehouse.getWarehouseId());
+        Warehouse warehouse = warehouseService.getWarehouseByWarehouseId(nearestWarehouse.getWarehouseId());
         
         // Calculate distance from warehouse to customer
         double distance = DistanceCalculator.calculateDistance(warehouse.getLocation(), customer.getLocation());

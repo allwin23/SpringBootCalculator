@@ -95,7 +95,7 @@ public class WarehouseService {
         LocationDTO locationDTO = new LocationDTO(warehouseLocation.getLat(), warehouseLocation.getLng());
         
         return NearestWarehouseResponse.builder()
-                .warehouseId(nearestWarehouse.getId())
+                .warehouseId(nearestWarehouse.getWarehouseId())
                 .warehouseLocation(locationDTO)
                 .build();
     }

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,9 @@ class WarehouseServiceTest {
     
     @Autowired
     private WarehouseService warehouseService;
+    
+    @Autowired
+    private CacheManager cacheManager;
     
     @Autowired
     private SellerRepository sellerRepository;
@@ -40,6 +44,9 @@ class WarehouseServiceTest {
     
     @BeforeEach
     void setUp() {
+        // Clear caches to prevent pollution
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+        
         // Create test seller
         testSeller = Seller.builder()
                 .sellerId("TEST-SELLER-001")
@@ -86,7 +93,7 @@ class WarehouseServiceTest {
         assertNotNull(response);
         assertNotNull(response.getWarehouseId());
         assertNotNull(response.getWarehouseLocation());
-        assertEquals(warehouse1.getId(), response.getWarehouseId());
+        assertEquals(warehouse1.getWarehouseId(), response.getWarehouseId());
     }
     
     @Test

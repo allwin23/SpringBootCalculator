@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,9 @@ class ShippingChargeServiceTest {
     
     @Autowired
     private ShippingChargeService shippingChargeService;
+    
+    @Autowired
+    private CacheManager cacheManager;
     
     @Autowired
     private WarehouseService warehouseService;
@@ -48,6 +52,9 @@ class ShippingChargeServiceTest {
     
     @BeforeEach
     void setUp() {
+        // Clear caches to prevent pollution
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+        
         // Create test customer
         testCustomer = Customer.builder()
                 .customerId("TEST-CUST-001")
@@ -91,7 +98,7 @@ class ShippingChargeServiceTest {
     @Test
     void testCalculateShippingCharge_Standard_Success() {
         Double charge = shippingChargeService.calculateShippingCharge(
-                testWarehouse.getId(), testCustomer.getCustomerId(), "standard", testProduct.getProductId());
+                testWarehouse.getWarehouseId(), testCustomer.getCustomerId(), "standard", testProduct.getProductId());
         
         assertNotNull(charge);
         assertTrue(charge > 0);
@@ -100,7 +107,7 @@ class ShippingChargeServiceTest {
     @Test
     void testCalculateShippingCharge_Express_Success() {
         Double charge = shippingChargeService.calculateShippingCharge(
-                testWarehouse.getId(), testCustomer.getCustomerId(), "express", testProduct.getProductId());
+                testWarehouse.getWarehouseId(), testCustomer.getCustomerId(), "express", testProduct.getProductId());
         
         assertNotNull(charge);
         assertTrue(charge > 0);
@@ -110,7 +117,7 @@ class ShippingChargeServiceTest {
     void testCalculateShippingCharge_InvalidDeliverySpeed() {
         assertThrows(InvalidRequestException.class, () -> {
             shippingChargeService.calculateShippingCharge(
-                    testWarehouse.getId(), testCustomer.getCustomerId(), "invalid", testProduct.getProductId());
+                    testWarehouse.getWarehouseId(), testCustomer.getCustomerId(), "invalid", testProduct.getProductId());
         });
     }
     
@@ -118,7 +125,7 @@ class ShippingChargeServiceTest {
     void testCalculateShippingCharge_CustomerNotFound() {
         assertThrows(ResourceNotFoundException.class, () -> {
             shippingChargeService.calculateShippingCharge(
-                    testWarehouse.getId(), "NON-EXISTENT", "standard", testProduct.getProductId());
+                    testWarehouse.getWarehouseId(), "NON-EXISTENT", "standard", testProduct.getProductId());
         });
     }
     

@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class NearestWarehouseResponse {
-    private Long warehouseId;
+    private String warehouseId;
     private LocationDTO warehouseLocation;
 }
