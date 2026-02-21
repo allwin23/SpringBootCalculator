@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +21,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/shipping-charge")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "4. Shipping Charge Engine", description = "Endpoints for calculating direct manual shipping quotes")
 public class ShippingChargeController {
     
     private final ShippingChargeService shippingChargeService;

@@ -30,6 +30,9 @@ spring:
     caffeine:
       spec: maximumSize=500,expireAfterWrite=10m
 
+springdoc:
+  show-actuator: true
+
 server:
   port: ${PORT:9090}
 

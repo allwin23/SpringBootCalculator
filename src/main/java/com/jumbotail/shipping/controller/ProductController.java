@@ -5,10 +5,12 @@ import com.jumbotail.shipping.service.WeightConversionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
+@Tag(name = "2. Master Data Lookups")
 public class ProductController {
 
     private final WeightConversionService weightConversionService;

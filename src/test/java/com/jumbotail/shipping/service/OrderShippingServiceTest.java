@@ -27,6 +27,8 @@ class OrderShippingServiceTest {
     private OrderRepository orderRepository;
     @Mock
     private WarehouseService warehouseService;
+    @Mock
+    private ShippingMetricsService shippingMetricsService;
 
     @InjectMocks
     private OrderShippingService orderShippingService;

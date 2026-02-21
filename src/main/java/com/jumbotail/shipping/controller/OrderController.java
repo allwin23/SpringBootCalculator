@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * REST Controller for order-related operations
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "1. Order Management", description = "Endpoints for creating and retrieving orders and shipping estimates")
 public class OrderController {
     
     private final OrderService orderService;

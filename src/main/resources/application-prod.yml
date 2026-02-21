@@ -2,19 +2,19 @@ spring:
   application:
     name: jumbotail-shipping
   
-  # In a real production setup, this would point to a real Postgres/MySQL DB
-  # Railway will inject these environment variables if you provision a database
+  # Railway PostgreSQL injection 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/shippingdb}
-    driverClassName: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}
-    username: ${SPRING_DATASOURCE_USERNAME:sa}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:postgres}}
+    driverClassName: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:${PGUSER:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${PGPASSWORD:}}
   
   h2:
     console:
       enabled: false # Ensure console is disabled in production
   
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update # Use update or validate in production
     show-sql: false # Disable raw SQL logging for performance

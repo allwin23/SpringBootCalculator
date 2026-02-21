@@ -10,5 +10,11 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
-EXPOSE 9090
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]
+
+# Railway injects the PORT environment variable dynamically
+ENV PORT=9090
+ENV SPRING_PROFILES_ACTIVE=default
+EXPOSE $PORT
+
+# Start the application using Railway's PORT and active profile
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT}"]

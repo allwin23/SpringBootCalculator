@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * REST Controller for warehouse-related operations
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/warehouse")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "2. Master Data Lookups", description = "Helper endpoints for looking up basic data")
 public class WarehouseController {
     
     private final WarehouseService warehouseService;

@@ -118,6 +118,16 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
             productRepository.save(maggie);
             
+            Product nescafe = Product.builder()
+                    .productId("459")
+                    .name("Nescafe Coffee 200g")
+                    .sellingPrice(250.0)
+                    .seller(nestleSeller)
+                    .attributes(new ProductAttributes(0.2, 8.0, 8.0, 10.0))
+                    .active(true)
+                    .build();
+            productRepository.save(nescafe);
+            
             // Rice Seller
             Seller riceSeller = Seller.builder()
                     .sellerId("124")
@@ -226,8 +236,9 @@ public class DataInitializer implements CommandLineRunner {
             Product p1 = productRepository.findByProductIdAndActiveTrue("456").orElse(null); // Maggie
             Product p2 = productRepository.findByProductIdAndActiveTrue("457").orElse(null); // Rice
             Product p3 = productRepository.findByProductIdAndActiveTrue("458").orElse(null); // Sugar
+            Product p4 = productRepository.findByProductIdAndActiveTrue("459").orElse(null); // Nescafe
             
-            if (w1 != null && w2 != null && p1 != null && p2 != null && p3 != null) {
+            if (w1 != null && w2 != null && p1 != null && p2 != null && p3 != null && p4 != null) {
                 // BLR Warehouse Inventory (has everything)
                 inventoryRepository.save(WarehouseInventory.builder()
                         .warehouseId(w1.getId())
@@ -245,6 +256,12 @@ public class DataInitializer implements CommandLineRunner {
                         .warehouseId(w1.getId())
                         .productId(p3.getId())
                         .quantity(20)
+                        .build());
+                        
+                inventoryRepository.save(WarehouseInventory.builder()
+                        .warehouseId(w1.getId())
+                        .productId(p4.getId())
+                        .quantity(100)
                         .build());
                         
                 // MUMB Warehouse Inventory (only has Rice and Sugar, explicitly out of Maggie)

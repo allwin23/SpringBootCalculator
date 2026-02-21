@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/logistics")
 @RequiredArgsConstructor
-@Tag(name = "Recommendation API", description = "Elite Logistics Optimization Engine endpoints")
+@Tag(name = "3. Logistics Optimization Engine", description = "Elite Logistics Optimization Engine endpoints")
 public class LogisticsRecommendationController {
 
     private final LogisticsDecisionService logisticsDecisionService;
